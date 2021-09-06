@@ -1,8 +1,12 @@
+#!/usr/bin/env python3
+
+import pdb
 import numpy as np
 import torch
 import tvm
 from tvm import relay
 from tvm.relay.frontend.pytorch import from_pytorch
+import tvm.testing
 
 
 class SimpleIf(torch.nn.Module):
@@ -118,7 +122,9 @@ for raw_model in models:
     input_shapes = [(input_name, (10, 20))]
     mod, params = from_pytorch(script_module, input_shapes)
 
-    executor = relay.create_executor("vm", mod=mod, ctx=tvm.cpu(0), target="llvm")
+    executor = relay.create_executor("vm", mod=mod, target="llvm")
+    # executor = relay.create_executor(
+    #     "vm", mod=mod, ctx=tvm.cpu(0), target="llvm")
     evaluator = executor.evaluate()
 
     for i in range(5):
@@ -135,5 +141,5 @@ for raw_model in models:
             assert pt_result == tvm_res
         else:
             print(np.max(np.abs(op_res.asnumpy() - pt_result.numpy())))
-            tvm.testing.assert_allclose(op_res.asnumpy(), pt_result.numpy(),
-                                        rtol=1e-5, atol=1e-5)
+            tvm.testing.assert_allclose(
+                op_res.asnumpy(), pt_result.numpy(), rtol=1e-5, atol=1e-5)
